@@ -17,7 +17,7 @@ def verifie(nombre_utilisateur, nombre_secret):
     # On teste d'abord si on a trouvé le nombre secret.
     # La comparaison d'égalité s'écrit == en python. Pas =, qui est utilisé pour autre chose.
     if nombre_utilisateur == nombre_secret:
-        # Si on a trouvé le nombre secret, on écrit un message, on retourne Tru
+        # Si on a trouvé le nombre secret, on écrit un message, on retourne True
         print("Vous avez trouvé !")
         return True # Fin de la fonction si on passe ici
     # Sinon, si notre nombre est trop petit, on l'écrit
