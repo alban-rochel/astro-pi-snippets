@@ -9,13 +9,15 @@ heure_de_fin = heure_de_debut+timedelta(minutes=178)
 ephemeris = load('de421.bsp')
 timescale = load.timescale()
 camera = PiCamera()
-camera.resolution = (1296,972)
+camera.resolution = (2400,1200)
 while datetime.now()<heure_de_fin:
     lumiere_du_jour = ISS.at (timescale.now()).is_sunlit(ephemeris)
     if lumiere_du_jour:
-        print ("on fait des photo")
-        camera.capture("raloufe.jpg")
-        sleep(10)
+        print ("on fait une photo")
+        camera.capture("rien.jpg")
+        sleep(1.5)
+        print ("fini")
+        sleep (3)
     else:
         print ("pas de photo!!!")
     
