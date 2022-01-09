@@ -25,7 +25,8 @@ timescale = load.timescale()
 
 # On initialise la caméra
 camera = PiCamera()
-camera.resolution = (2400,1200)
+#camera.resolution = (3280, 2464) # Full FOV
+camera.resolution = (1640, 1232) # Binned, full FOV
 
 ### FIN INITIALISATIONS ###
 
