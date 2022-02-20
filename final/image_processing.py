@@ -16,7 +16,7 @@ porthole = cv2.imread("porthole_mask.png", cv2.IMREAD_GRAYSCALE)
 def crop_porthole(image):
     in_min = np.percentile(image, 5)
     in_max = np.percentile(image, 95)
-    print("min " + str(in_min) + " max " + str(in_max))
+    #print("min " + str(in_min) + " max " + str(in_max))
     return image[crop_top:crop_bottom, crop_left:crop_right]
 
 def get_clouds_mask(image):
@@ -36,32 +36,3 @@ def compute_ndvi(image):
     ndvi = (b.astype(float) - r) / bottom * 10.0
     ndvi = np.clip(ndvi, 0, 10).astype(np.uint8)
     return ndvi
-    
-#for image in photos:
-#    print("Processing "+ image)
-#    original = cv2.imread(image+".jpg")
-#    cropped = crop_porthole(original)
-#    cv2.imwrite(image + "_cropped.jpg", cropped,  [int(cv2.IMWRITE_JPEG_QUALITY), 90])
-#    clouds = get_clouds_mask(cropped)
-#    cv2.imwrite(image + "_clouds.jpg", clouds)
-#    land = get_land_mask(cropped)
-#    cv2.imwrite(image + "_land.jpg", land)
-#    land_mask = cv2.bitwise_and(porthole, land)
-#    land_mask = cv2.bitwise_and(land_mask, cv2.bitwise_not(clouds))
-#    #land_mask = cv2.cvtColor(land_mask, cv2.COLOR_GRAY2BGR)
-#    #data = cv2.bitwise_and(cropped, land_mask)
-#    #cv2.imwrite(image + "_test.jpg", data)
-#    ndvi = calc_ndvi(cropped)
-#    cv2.imwrite(image + "_ndvi.jpg", ndvi)
-    
-#    total = 0
-#    mean = 0
-#    pixel_count = dict()
-#    for index in range(11):
-#        lower = np.array(index, dtype = "uint8")
-#        upper = np.array(index, dtype = "uint8")
-#        pixel_count[index] = np.count_nonzero(cv2.bitwise_and(cv2.inRange(ndvi, lower, upper), land_mask))
-#        mean += index * pixel_count[index]
-#        #print("index " + str(index) + " count " + str(pixel_count))
-#        total += pixel_count[index]
-#    print("mean " + str(mean/total))

@@ -112,31 +112,38 @@ def is_on_day_side(tuple_temps):
     return ISS.at(tuple_temps[1]).is_sunlit(ephemeris)
 
 def capture_image():
-    camera.capture(rawCapture, format="bgr")
-    image = np.copy(rawCapture.array)
-    rawCapture.truncate(0)
-    return image
+    return cv2.imread("51845638376_d241c3f433_o.jpg")
+    #camera.capture(rawCapture, format="bgr")
+    #image = np.copy(rawCapture.array)
+    #rawCapture.truncate(0)
+    #return image
 
-def genere_nom_sauvegarde(nom, temps, extension):
-    temps_str = temps[0].strftime("%y%m%d_%H%M%S%f")
-    return f"{record_folder}/{temps_str}_{nom}.{extension}"
+def generate_save_name(base, time, extension):
+    time_str = time[0].strftime("%y%m%d_%H%M%S%f")
+    return f"{record_folder}/{time_str}_{base}.{extension}"
 
-def genere_infos_capture(temps, position, code_climat):
+def generate_base_capture_metadata(time, position,climate_code):
     data = {
         "time":
             {
-            "year": temps[0].strftime("%y"),
-            "month": temps[0].strftime("%m"),
-            "day": temps[0].strftime("%d"),
-            "hour":temps[0].strftime("%H"),
-            "minute": temps[0].strftime("%M"),
-            "second": temps[0].strftime("%S"),
-            "micro": temps[0].strftime("%f")
+            "year": time[0].strftime("%y"),
+            "month": time[0].strftime("%m"),
+            "day": time[0].strftime("%d"),
+            "hour":time[0].strftime("%H"),
+            "minute": time[0].strftime("%M"),
+            "second": time[0].strftime("%S"),
+            "micro": time[0].strftime("%f")
             },
         "coords":
             {
                 "lat": position.latitude.degrees,
                 "lon": position.longitude.degrees,
+            },
+        "climate":
+            {
+                "code": int(climate_code),
+                "precise_zone": climate_code_to_text(climate_code),
+                "rough_zone": climate_code_to_text(climate_code/10)
             }
         }
     return data
@@ -158,3 +165,18 @@ def compte_nombre_indices(image, indice):
     mask = cv2.inRange(image, lower, upper)
     pixel_count = np.count_nonzero(mask)
     return pixel_count
+
+def compute_stats(ndvi_indexes):
+    total = 0
+    mean = 0
+    stdev = 0
+    for index in range(11):
+        total += ndvi_indexes[index]
+        mean += index * ndvi_indexes[index]
+    if total > 0:
+        mean = mean / total
+        for index in range(11):
+            stdev += (mean - index) * (mean - index) * ndvi_indexes[index]
+        stdev /= total
+        stdev = math.sqrt(stdev)
+    return (mean, stdev)
