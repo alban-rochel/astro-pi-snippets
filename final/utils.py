@@ -13,8 +13,9 @@ import math
 
 from logzero import logger, logfile
 
-# ASAP
+# ASAP, this is the reference startup time, so that we don't get interrupted after 3 hours
 start_time = datetime.now()
+logfile("events.log", maxBytes=10000000)
 logger.info("Starting at " + start_time.strftime("%Y/%m/%d %H:%M:%S"))
 
 camera = PiCamera()
@@ -25,6 +26,9 @@ timescale = load.timescale()
 base_folder = Path(__file__).parent.resolve()
 
 def configure(config):
+    """
+    Configures the global variables used everywhere.
+    """
     logger.info("Configuring...")
     #camera.resolution = (3280, 2464) # Full FOV
     #camera.resolution = (1664, 1232) # Binned, full FOV
@@ -42,11 +46,16 @@ def configure(config):
     logger.info("* Climates map: " + config["climates_file"])
     global record_folder
     record_folder = config["record_folder"]
+    if not record_folder:
+        record_folder = f"{base_folder}"
     logger.info("* Record folder " + record_folder)
     logger.info("... Configuring done")
     
-#https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification
 def climate_code_to_text(climate_zone):
+    """
+    Converts our climate zone codes into human-readable text.
+    https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification
+    """
     # Rough classification, which is Precise_classification/10
     if climate_zone == 5:
         return "Tropical"
@@ -81,6 +90,9 @@ def climate_code_to_text(climate_zone):
         return "Other"
     
 def get_climate_code(iss_position):
+    """
+    Converts the ISS ground coordinates into coordinates in our climates map, and returns the corresponding climate code.
+    """
     # Positive latitude: north
     # Negative latitude: south
     # Positive longitude: east of Greenwich
@@ -92,37 +104,61 @@ def get_climate_code(iss_position):
     return climates_map[row,col,0]
 
 def experiment_done():
+    """
+    Tells if it is time to stop the main loop (according to the run time configured)
+    """
     return datetime.now() >= end_time
 
 def get_current_time():
+    """
+    Returns a structure containing "now" as both time formats needed in the program.
+    Every function needing time will take the returned structure as its input, and choose the proper entry.
+    """
     current_time_dt = datetime.now()
     current_time_ts = timescale.now()
     return (current_time_dt, current_time_ts)
 
-def wait_next_pass(tuple_temps):
-    end_sleep_time = tuple_temps[0] + timedelta(seconds = wait_time)
+def wait_next_pass(time_tuple):
+    """
+    Waits until the configured duration has been elapsed since time_tuple
+    """
+    end_sleep_time = time_tuple[0] + timedelta(seconds = wait_time)
     current_time_dt = datetime.now()
     if current_time_dt < end_sleep_time:
         sleep((end_sleep_time - current_time_dt).total_seconds())
         
-def position_iss(tuple_temps):
-    return ISS.at(tuple_temps[1]).subpoint()
+def position_iss(time_tuple):
+    """
+    Returns the ground position of the ISS at time_tuple.
+    """
+    return ISS.at(time_tuple[1]).subpoint()
 
-def is_on_day_side(tuple_temps):
-    return ISS.at(tuple_temps[1]).is_sunlit(ephemeris)
+def is_on_day_side(time_tuple):
+    """
+    Returns whether the ISS is on day side at time_tuple. Otherwise we see nothing.
+    """
+    return ISS.at(time_tuple[1]).is_sunlit(ephemeris)
 
 def capture_image():
-    return cv2.imread("51845638376_d241c3f433_o.jpg")
-    #camera.capture(rawCapture, format="bgr")
-    #image = np.copy(rawCapture.array)
-    #rawCapture.truncate(0)
-    #return image
+    """
+    Gets an image from the camera.
+    """
+    camera.capture(rawCapture, format="bgr")
+    image = np.copy(rawCapture.array)
+    rawCapture.truncate(0)
+    return image
 
 def generate_save_name(base, time, extension):
+    """
+    Generates a timestamped file name. The timestamp is such that sorting in alphabetic order is also the chronological order.
+    """
     time_str = time[0].strftime("%y%m%d_%H%M%S%f")
     return f"{record_folder}/{time_str}_{base}.{extension}"
 
 def generate_base_capture_metadata(time, position,climate_code):
+    """
+    Generates the base metadata attached to any capture.
+    """
     data = {
         "time":
             {
@@ -148,25 +184,10 @@ def generate_base_capture_metadata(time, position,climate_code):
         }
     return data
 
-def sauvegarde_image(image, nom):
-    chemin_image = f"{base_folder}/{nom}"
-    logger.debug("Enregistrement image {chemin_image}")
-    cv2.imwrite(chemin_image, image)
-
-def sauvegarde_infos_capture(donnees, nom):
-    chemin_donnees = f"{base_folder}/{nom}"
-    logger.debug("Enregistrement donnees {chemin_donnees}")
-    with open(chemin_donnees, "w") as outfile:
-        json.dump(donnees, outfile, indent=2)
-
-def compte_nombre_indices(image, indice):
-    lower = np.array(indice, dtype = "uint8")
-    upper = np.array(indice, dtype = "uint8")
-    mask = cv2.inRange(image, lower, upper)
-    pixel_count = np.count_nonzero(mask)
-    return pixel_count
-
 def compute_stats(ndvi_indexes):
+    """
+    With a dictionary of counts of points for each NDVI index as the entry ([0, 10]), computes mean and standard deviation of indexes.
+    """
     total = 0
     mean = 0
     stdev = 0
